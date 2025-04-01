@@ -1,0 +1,234 @@
+---
+title: "Stat 345 Midterm"
+author: "Gracie Funk"
+date: "2025-03-30"
+output: word_document
+---
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(devtools)
+        devtools::install_github("abresler/nbastatR@aba9179ef644f263387c1536d6ddd26104d79cf4")
+```
+
+### Overview:
+  - The shot charts I have created for my project show the 2010 to 2020 shot locations for the Milwaukee Bucks
+  - Each dot on the animation represents a shot taken by a player
+    - Each green dot is a made shot
+    - Each beige dot is a missed shot
+  - I have also added a court to the animation to help understand exactly where each shot was taken
+    - The dimensions of the court has been scaled to align to the dimensions of each shot taken 
+
+```{r, include=FALSE}
+library(nbastatR)  #package for data from NBA
+library(ggplot2)   #package for plotting
+library(gganimate) #package for animating the plot
+
+court <- ggplot(data = data.frame(x = 1, y = 1), aes(x, y)) +
+  geom_path(data = data.frame(x = c(-25, -25, 25, 25, -25), y = c(0, 47, 47, 0, 0))) +
+  geom_path(data = data.frame(x = c(-6000:(-1)/1000, 1:6000/1000), y = c(19 + sqrt(6^2 - c(-6000:(-1)/1000, 1:6000/1000)^2))), aes(x = x, y = y)) +
+  geom_path(data = data.frame(x = c(-6000:(-1)/1000, 1:6000/1000), y = c(19 - sqrt(6^2 - c(-6000:(-1)/1000, 1:6000/1000)^2))), aes(x = x, y = y), linetype = 'dashed') +
+  geom_path(data = data.frame(x = c(-8, -8, 8, 8, -8), y = c(0, 19, 19, 0, 0))) +
+  geom_path(data = data.frame(x = c(-6, -6, 6, 6, -6), y = c(0, 19, 19, 0, 0))) +
+  geom_path(data = data.frame(x = c(-4000:(-1)/1000, 1:4000/1000), y = c(5.25 + sqrt(4^2 - c(-4000:(-1)/1000, 1:4000/1000)^2))), aes(x = x, y = y)) +
+  geom_path(data = data.frame(x = c(-6000:(-1)/1000, 1:6000/1000), y = c(47 - sqrt(6^2 - c(-6000:(-1)/1000, 1:6000/1000)^2))), aes(x = x, y = y)) + #Center circle
+  geom_path(data = data.frame(x = c(-750:(-1)/1000, 1:750/1000, 750:1/1000, -1:-750/1000), y = c(c(5.25 + sqrt(0.75^2 - c(-750:(-1)/1000, 1:750/1000)^2)), c(5.25 - sqrt(0.75^2 - c(750:1/1000, -1:-750/1000)^2)))), aes(x = x, y = y)) +
+  geom_path(data = data.frame(x = c(-3, 3), y = c(4, 4)), lineend = 'butt') +
+  geom_path(data = data.frame(x = c(-22, -22, -22000:(-1)/1000, 1:22000/1000, 22, 22), y = c(0, 169/12, 5.25 + sqrt(23.75^2 - c(-22000:(-1)/1000, 1:22000/1000)^2), 169/12, 0)), aes(x = x, y = y)) +
+  coord_fixed() +
+  theme_void()
+```
+
+```{r,include=FALSE}
+Sys.setenv(VROOM_CONNECTION_SIZE = 131072 * 2)
+
+shot_data <- function(team, season) {
+  teams_shots(teams = team, seasons = season, season_types = "Regular Season",   measures = "FGA") 
+  }
+years <- c(2010:2020)
+bucks_shot_data <- lapply(years, function(year) {
+  shot_data("Milwaukee Bucks", year) })
+bucks_combined_shot_data <- do.call(rbind, bucks_shot_data)
+```
+
+```{r, echo=FALSE}
+plots <- ggplot(bucks_combined_shot_data, aes(x = locationX, y = locationY, color = typeEvent)) +
+  geom_point(alpha = 0.5) + 
+  labs(title = "Milwaukee Bucks Shot Plot for Year: {round(frame_time,0)}", x = " ", y = " ") + 
+  theme_minimal() + theme(panel.grid = element_blank()) + 
+  xlim(-300, 300) +  # X-axis limits
+  ylim(-47, 423) +   # Y-axis limits
+  annotation_custom(ggplotGrob(court), xmin = -300, xmax = 300, ymin = -47, ymax = 423) + 
+  coord_fixed(ratio = 1.1) + 
+  scale_color_manual(name = "Outcome", values = c("Made Shot" = "#00471B", "Missed Shot" = "#EEE1C6")) + 
+  transition_time(bucks_combined_shot_data$yearSeason) 
+
+animate(plots, fps = 1, nframes = 10) #creating the animation
+```
+
+### Key Findings:
+  - Overall, less shots are being taken over time
+  - More shots are being made right next to the basket
+  - Three point shots are more concentrated at the top of the arc rather than the sides
+  - Less shots are being taken inside the arc and are moving outside the arc
+
+
+### More Details:
+  - Looking at how the total amount of shots being taken over each season, we can see that the number has decrease for both inside and outside of the three point line
+    - This is probably due to the Milwaukee Bucks focusing more on accuracy than total number of shots taken
+  
+  - Looking near the hoop, we can see more shots being taken right near it as well as more being made which can be seen by the growing number of green dots over the years
+  
+  - Looking at specifically 3-point shots, we can see that the Milwaukee Bucks over time have started to focus these shots near the top of the 3-point arc, rather than the sides 
+    -We also see more attempts at these types of shots over time
+    
+  - Looking at the overall location of the shots, we see a movement from the inside of the arc towards the outside of the arc, showing that over time the Milwaukee Bucks has taken focus away from 2-point shots and putting more effort into taking 3-point shots
+
+
+### My code:
+
+```{r, eval=FALSE}
+# Code for the Milwaukee Buck's shot data for the year 2010 - 2020
+# You will need the following packages:
+library(nbastatR)   #NBA Data
+library(ggplot2)    #Graphing package
+library(gganimate)  #Animation for plot
+library(devtools)   #Devtools
+devtools::install_github("abresler/nbastatR", force = TRUE)
+
+# Code to increase the connection buffer size:
+Sys.setenv(VROOM_CONNECTION_SIZE = 131072 * 2)
+
+# Code that generates a basketball court (credits to github user edkupfer (https://gist.github.com/edkupfer/6354404#file-ggplot-nba-halfcourt)):
+court <- ggplot(data = data.frame(x = 1, y = 1), aes(x, y)) +
+  #court box:
+  geom_path(data = data.frame(x = c(-25, -25, 25, 25, -25), y = c(0, 47, 47, 0, 0))) +
+  #solid half of the free throw semicircle:
+  geom_path(data = data.frame(x = c(-6000:(-1)/1000, 1:6000/1000), y = c(19 + sqrt(6^2 - c(-6000:(-1)/1000, 1:6000/1000)^2))), aes(x = x, y = y)) +
+  #dashed half of the free throw semicircle:
+  geom_path(data = data.frame(x = c(-6000:(-1)/1000, 1:6000/1000), y = c(19 - sqrt(6^2 - c(-6000:(-1)/1000, 1:6000/1000)^2))), aes(x = x, y = y), linetype = 'dashed') +
+  #the key:
+  geom_path(data = data.frame(x = c(-8, -8, 8, 8, -8), y = c(0, 19, 19, 0, 0))) +
+  #the box inside of the key:
+  geom_path(data = data.frame(x = c(-6, -6, 6, 6, -6), y = c(0, 19, 19, 0, 0))) +
+  #the restricted area semicircle:
+  geom_path(data = data.frame(x = c(-4000:(-1)/1000, 1:4000/1000), y = c(5.25 + sqrt(4^2 - c(-4000:(-1)/1000, 1:4000/1000)^2))), aes(x = x, y = y)) +
+  #half court semicircle:
+  geom_path(data = data.frame(x = c(-6000:(-1)/1000, 1:6000/1000), y = c(47 - sqrt(6^2 - c(-6000:(-1)/1000, 1:6000/1000)^2))), aes(x = x, y = y)) + 
+  #rim:
+  geom_path(data = data.frame(x = c(-750:(-1)/1000, 1:750/1000, 750:1/1000, -1:-750/1000), y = c(c(5.25 + sqrt(0.75^2 - c(-750:(-1)/1000, 1:750/1000)^2)), c(5.25 - sqrt(0.75^2 - c(750:1/1000, -1:-750/1000)^2)))), aes(x = x, y = y)) +
+  #backboard:
+  geom_path(data = data.frame(x = c(-3, 3), y = c(4, 4)), lineend = 'butt') +
+  #three-point line 
+  geom_path(data = data.frame(x = c(-22, -22, -22000:(-1)/1000, 1:22000/1000, 22, 22), y = c(0, 169/12, 5.25 + sqrt(23.75^2 - c(-22000:(-1)/1000, 1:22000/1000)^2), 169/12, 0)), aes(x = x, y = y)) +
+  #making a fixed ratio 1:1
+  coord_fixed() +
+  #making it a blank background
+  theme_void()
+
+# Code that creates a function which takes in a certain team and seasons and outputs shot data 
+shot_data <- function(team, season) {
+  teams_shots(teams = team, seasons = season, season_types = "Regular Season",   measures = "FGA") 
+}
+
+# Code for my specific focus on the Milwaukee Buck's 2010 - 2020 shot data 
+years <- c(2010:2020)
+bucks_shot_data <- lapply(years, function(year) {
+  shot_data("Milwaukee Bucks", year) })
+bucks_combined_shot_data <- do.call(rbind, bucks_shot_data) #This line combines all shot data from shot_data_list into one data frame to make plotting easier
+
+# Code for creating the plots and then combining them into one animation
+plots <- ggplot(bucks_combined_shot_data, aes(x = locationX, y = locationY, color = typeEvent)) + #generates plot with out data
+  geom_point(alpha = 0.5) + #adds dots with slight transparency for better reading
+  labs(title = "Milwaukee Bucks Shot Plot for Year: {round(frame_time,0)}", x = " ", y = " ") + #adds titles
+  theme_minimal() + theme(panel.grid = element_blank()) + #minimal theme and getting rid of the grid 
+  xlim(-300, 300) +  # x-axis limits
+  ylim(-47, 423) +   # y-axis limits
+  annotation_custom(ggplotGrob(court), xmin = -300, xmax = 300, ymin = -47, ymax = 423) + #adding the court to the plots
+  coord_fixed(ratio = 1.1) + #setting the proportions of the plot to ensure they line up with our data
+  scale_color_manual(name = "Outcome", values = c("Made Shot" = "#00471B", "Missed Shot" = "#EEE1C6")) + #adding a key and team colors to missed/made shots
+  transition_time(bucks_combined_shot_data$yearSeason) #adding the transition to have a plot and frame for each season
+
+animate(plots, fps = 1, nframes = 10) #creating the animation with 1 second per plot with 10 years of data (2010 - 2020)
+```
+
+
+### 4-Point Line
+I decided to explore where the NBA should draw a 4-point line. 
+I did this by creating a function which allows you to input a distance for the line and see how the expected value of at the proposed distance, and how certain Milwaukee Bucks players would perform with your proposed line distance.
+Using my function you can look at how a player's point total for the season would change.
+Therefore, with my function you can evaluate if you think the line distance is fair or not based on the expected value and changes in player's point totals.
+```{r}
+library(dplyr)
+
+#redefining my bucks 2010-2020 shot data
+shot_data <- do.call(rbind, bucks_shot_data)
+
+#this function takes in your input of shot data from a team and the 4-point line distance you want to test and outputs the expected value 
+calculate_expected_value <- function(shot_data, line_distance) {
+  shot_data <- shot_data[complete.cases(shot_data[, c("locationX", "locationY")]), ] #only letting there be cases with both coordinates
+  shot_data$shot_distance <- sqrt((shot_data$locationX / 10)^2 + (shot_data$locationY / 10)^2) #adding a column to shot_data called shot_distance which uses the PT to calculate shot distance for each shot attempt
+
+  #adding a column to shot_data called point_value which has the value of each shot (2 for 2-pts, 3 for 3-pts, 4 for our 4-pt line shot)
+  shot_data$point_value <- ifelse(  
+    shot_data$shot_distance <= line_distance, 2,
+    ifelse(shot_data$shot_distance > line_distance & shot_data$shot_distance <= (line_distance + 4), 4, 3)
+  )
+
+  #calculating the shooting percentage for each point value 
+  shooting_percentage <- aggregate(isShotMade ~ point_value, data = shot_data, FUN = function(x) sum(x) / length(x))
+  expected_value <- sum(shooting_percentage$isShotMade * shooting_percentage$point_value) #expected value calculation
+  return(expected_value)
+}
+
+#this function calculates the total amount of points made in a season
+calculate_season_points <- function(shot_data) {
+  made_shots <- shot_data[shot_data$isShotMade == TRUE, ]
+  season_points <- sum(case_when(
+    made_shots$typeShot == "2PT Field Goal" ~ 2,
+    made_shots$typeShot == "3PT Field Goal" ~ 3,
+    made_shots$typeShot == "4PT Field Goal" ~ 4,
+    TRUE ~ 0
+  ))
+  
+  return(season_points)
+}
+
+#putting in my own line distance
+line_distance <- 30
+
+#printing the expected value from my function with this distance
+expected_value <- calculate_expected_value(shot_data, line_distance)
+print(paste("Expected value with proposed 4-point line at", line_distance, "feet:", expected_value))
+
+#testing on a Milwaukee Bucks player
+player_name <- "Brook Lopez"
+player_shot_data <- shot_data[shot_data$namePlayer == player_name, ]
+season_points_without_4pt <- calculate_season_points(player_shot_data)
+player_shot_data_with_4pt <- player_shot_data
+player_shot_data_with_4pt$shot_distance <- sqrt((player_shot_data_with_4pt$locationX / 10)^2 + (player_shot_data_with_4pt$locationY / 10)^2)
+player_shot_data_with_4pt$typeShot <- ifelse(player_shot_data_with_4pt$shot_distance > line_distance, "4PT Field Goal", player_shot_data_with_4pt$typeShot)
+season_points_with_4pt <- calculate_season_points(player_shot_data_with_4pt)
+percentage_change <- ifelse(season_points_without_4pt == 0, NA, 
+                            ((season_points_with_4pt - season_points_without_4pt) / season_points_without_4pt) * 100)
+
+
+#print outs for each outcome
+if (is.na(percentage_change)) {
+  outcome <- paste(player_name,"'s season point total cannot be determined due to zero baseline points.")
+} else if (percentage_change > 0) {
+  outcome <- paste(player_name,"'s season point total would increase by", round(percentage_change, 2), "%")
+} else if (percentage_change < 0) {
+  outcome <- paste(player_name,"'s season point total would decrease by", abs(round(percentage_change, 2)), "%")
+} else {
+  outcome <- paste(player_name,"'s season point total would remain unchanged")
+}
+
+print(outcome)
+
+
+```
+Looking at this output from my function, I can see that a 4-point line at 30 feet we have an expected value of 1.88. This means that a player is expect to score 1.9 points per shot at this line distance. The reason this number is below 4 is because expected value takes into account the actual probability of making a shot from 30 feet.
+Using my example of Brook Lopez from the Milwaukee Bucks, we can expect that his season point total would increase by .44% with this 30 foot 4-point line. 
+
+ 
+
