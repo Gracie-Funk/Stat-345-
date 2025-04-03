@@ -18,7 +18,7 @@ library(devtools)
   - I have also added a court to the animation to help understand exactly where each shot was taken
     - The dimensions of the court has been scaled to align to the dimensions of each shot taken 
 
-```{r, include=FALSE}
+```{r,include=FALSE}
 library(nbastatR)  #package for data from NBA
 library(ggplot2)   #package for plotting
 library(gganimate) #package for animating the plot
@@ -65,6 +65,7 @@ plots <- ggplot(bucks_combined_shot_data, aes(x = locationX, y = locationY, colo
 animate(plots, fps = 1, nframes = 10) #creating the animation
 ```
 
+
 ### Key Findings:
   - Overall, less shots are being taken over time
   - More shots are being made right next to the basket
@@ -72,28 +73,27 @@ animate(plots, fps = 1, nframes = 10) #creating the animation
   - Less shots are being taken inside the arc and are moving outside the arc
 
 
-### More Details:
-  - Looking at how the total amount of shots being taken over each season, we can see that the number has decrease for both inside and outside of the three point line
+### More Details: 
+  - Looking at the total amount of shots being taken each season, we can see that the number has decreased for both inside and outside of the three point line
+    - This is shown by the decreasing amount of dots (both green and beige)
     - This is probably due to the Milwaukee Bucks focusing more on accuracy than total number of shots taken
   
   - Looking near the hoop, we can see more shots being taken right near it as well as more being made which can be seen by the growing number of green dots over the years
   
-  - Looking at specifically 3-point shots, we can see that the Milwaukee Bucks over time have started to focus these shots near the top of the 3-point arc, rather than the sides 
+  - Looking at specifically 3-point shots, we can see that the Milwaukee Bucks over time have started to focus these types of shots near the top of the 3-point arc, rather than the sides 
     -We also see more attempts at these types of shots over time
     
   - Looking at the overall location of the shots, we see a movement from the inside of the arc towards the outside of the arc, showing that over time the Milwaukee Bucks has taken focus away from 2-point shots and putting more effort into taking 3-point shots
 
 
-### My code:
-
-```{r, eval=FALSE}
+```{r, eval=FALSE, echo=FALSE}
 # Code for the Milwaukee Buck's shot data for the year 2010 - 2020
 # You will need the following packages:
 library(nbastatR)   #NBA Data
 library(ggplot2)    #Graphing package
 library(gganimate)  #Animation for plot
-library(devtools)   #Devtools
-devtools::install_github("abresler/nbastatR", force = TRUE)
+library(devtools)
+devtools::install_github("abresler/nbastatR@aba9179ef644f263387c1536d6ddd26104d79cf4")
 
 # Code to increase the connection buffer size:
 Sys.setenv(VROOM_CONNECTION_SIZE = 131072 * 2)
@@ -125,7 +125,7 @@ court <- ggplot(data = data.frame(x = 1, y = 1), aes(x, y)) +
   #making it a blank background
   theme_void()
 
-# Code that creates a function which takes in a certain team and seasons and outputs shot data 
+# Code that creates a function which takes in a certain team and seasons and outputs shot data
 shot_data <- function(team, season) {
   teams_shots(teams = team, seasons = season, season_types = "Regular Season",   measures = "FGA") 
 }
@@ -137,13 +137,13 @@ bucks_shot_data <- lapply(years, function(year) {
 bucks_combined_shot_data <- do.call(rbind, bucks_shot_data) #This line combines all shot data from shot_data_list into one data frame to make plotting easier
 
 # Code for creating the plots and then combining them into one animation
-plots <- ggplot(bucks_combined_shot_data, aes(x = locationX, y = locationY, color = typeEvent)) + #generates plot with out data
+plots <- ggplot(bucks_combined_shot_data, aes(x = locationX, y = locationY, color = typeEvent)) + #generates plot with our data
   geom_point(alpha = 0.5) + #adds dots with slight transparency for better reading
   labs(title = "Milwaukee Bucks Shot Plot for Year: {round(frame_time,0)}", x = " ", y = " ") + #adds titles
   theme_minimal() + theme(panel.grid = element_blank()) + #minimal theme and getting rid of the grid 
   xlim(-300, 300) +  # x-axis limits
   ylim(-47, 423) +   # y-axis limits
-  annotation_custom(ggplotGrob(court), xmin = -300, xmax = 300, ymin = -47, ymax = 423) + #adding the court to the plots
+  annotation_custom(ggplotGrob(court), xmin = -300, xmax = 300, ymin = -47, ymax = 423) + #adding the court to the plots with the same x and y dimensions for the 1:1 ratio 
   coord_fixed(ratio = 1.1) + #setting the proportions of the plot to ensure they line up with our data
   scale_color_manual(name = "Outcome", values = c("Made Shot" = "#00471B", "Missed Shot" = "#EEE1C6")) + #adding a key and team colors to missed/made shots
   transition_time(bucks_combined_shot_data$yearSeason) #adding the transition to have a plot and frame for each season
@@ -152,20 +152,19 @@ animate(plots, fps = 1, nframes = 10) #creating the animation with 1 second per 
 ```
 
 
-### 4-Point Line
+### 4-Point Line 
 I decided to explore where the NBA should draw a 4-point line. 
 I did this by creating a function which allows you to input a distance for the line and see how the expected value of at the proposed distance, and how certain Milwaukee Bucks players would perform with your proposed line distance.
 Using my function you can look at how a player's point total for the season would change.
 Therefore, with my function you can evaluate if you think the line distance is fair or not based on the expected value and changes in player's point totals.
-```{r}
-library(dplyr)
 
-#redefining my bucks 2010-2020 shot data
+```{r, echo=FALSE}
+library(dplyr)
 shot_data <- do.call(rbind, bucks_shot_data)
 
-#this function takes in your input of shot data from a team and the 4-point line distance you want to test and outputs the expected value 
+#this function takes in your input of combined shot data from a team and the 4-point line distance you want to test and outputs the expected value 
 calculate_expected_value <- function(shot_data, line_distance) {
-  shot_data <- shot_data[complete.cases(shot_data[, c("locationX", "locationY")]), ] #only letting there be cases with both coordinates
+  shot_data <- shot_data[complete.cases(shot_data[, c("locationX", "locationY")]), ] #only letting there be cases with both coordinates 
   shot_data$shot_distance <- sqrt((shot_data$locationX / 10)^2 + (shot_data$locationY / 10)^2) #adding a column to shot_data called shot_distance which uses the PT to calculate shot distance for each shot attempt
 
   #adding a column to shot_data called point_value which has the value of each shot (2 for 2-pts, 3 for 3-pts, 4 for our 4-pt line shot)
@@ -196,7 +195,7 @@ calculate_season_points <- function(shot_data) {
 #putting in my own line distance
 line_distance <- 30
 
-#printing the expected value from my function with this distance
+#calculating and printing the expected value from my function with this distance
 expected_value <- calculate_expected_value(shot_data, line_distance)
 print(paste("Expected value with proposed 4-point line at", line_distance, "feet:", expected_value))
 
@@ -214,7 +213,7 @@ percentage_change <- ifelse(season_points_without_4pt == 0, NA,
 
 #print outs for each outcome
 if (is.na(percentage_change)) {
-  outcome <- paste(player_name,"'s season point total cannot be determined due to zero baseline points.")
+  outcome <- paste(player_name,"'s season point total cannot be determined.")
 } else if (percentage_change > 0) {
   outcome <- paste(player_name,"'s season point total would increase by", round(percentage_change, 2), "%")
 } else if (percentage_change < 0) {
@@ -224,8 +223,6 @@ if (is.na(percentage_change)) {
 }
 
 print(outcome)
-
-
 ```
 Looking at this output from my function, I can see that a 4-point line at 30 feet we have an expected value of 1.88. This means that a player is expect to score 1.9 points per shot at this line distance. The reason this number is below 4 is because expected value takes into account the actual probability of making a shot from 30 feet.
 Using my example of Brook Lopez from the Milwaukee Bucks, we can expect that his season point total would increase by .44% with this 30 foot 4-point line. 
