@@ -42,8 +42,9 @@ court <- ggplot(data = data.frame(x = 1, y = 1), aes(x, y)) +
 Sys.setenv(VROOM_CONNECTION_SIZE = 131072 * 2)
 
 shot_data <- function(team, season) {
-  teams_shots(teams = team, seasons = season, season_types = "Regular Season",   measures = "FGA") 
-  }
+  teams_shots(teams = team, seasons = season, season_types = "Regular Season", measures = "FGA") 
+}
+
 years <- c(2010:2020)
 bucks_shot_data <- lapply(years, function(year) {
   shot_data("Milwaukee Bucks", year) })
@@ -55,14 +56,14 @@ plots <- ggplot(bucks_combined_shot_data, aes(x = locationX, y = locationY, colo
   geom_point(alpha = 0.5) + 
   labs(title = "Milwaukee Bucks Shot Plot for Year: {round(frame_time,0)}", x = " ", y = " ") + 
   theme_minimal() + theme(panel.grid = element_blank()) + 
-  xlim(-300, 300) +  # X-axis limits
-  ylim(-47, 423) +   # Y-axis limits
+  xlim(-300, 300) +  
+  ylim(-47, 423) +  
   annotation_custom(ggplotGrob(court), xmin = -300, xmax = 300, ymin = -47, ymax = 423) + 
   coord_fixed(ratio = 1.1) + 
   scale_color_manual(name = "Outcome", values = c("Made Shot" = "#00471B", "Missed Shot" = "#EEE1C6")) + 
   transition_time(bucks_combined_shot_data$yearSeason) 
 
-animate(plots, fps = 1, nframes = 10) #creating the animation
+animate(plots, fps = 1, nframes = 10) 
 ```
 
 
@@ -98,7 +99,7 @@ devtools::install_github("abresler/nbastatR@aba9179ef644f263387c1536d6ddd26104d7
 # Code to increase the connection buffer size:
 Sys.setenv(VROOM_CONNECTION_SIZE = 131072 * 2)
 
-# Code that generates a basketball court (credits to github user edkupfer (https://gist.github.com/edkupfer/6354404#file-ggplot-nba-halfcourt)):
+# Code that generates a basketball court (credits to github user edkupfer (https://gist.github.com/edkupfer/6354404#file-ggplot-nba-halfcourt) for this code):
 court <- ggplot(data = data.frame(x = 1, y = 1), aes(x, y)) +
   #court box:
   geom_path(data = data.frame(x = c(-25, -25, 25, 25, -25), y = c(0, 47, 47, 0, 0))) +
@@ -178,7 +179,6 @@ calculate_expected_value <- function(shot_data, line_distance) {
   expected_value <- sum(shooting_percentage$isShotMade * shooting_percentage$point_value) #expected value calculation
   return(expected_value)
 }
-
 #this function calculates the total amount of points made in a season
 calculate_season_points <- function(shot_data) {
   made_shots <- shot_data[shot_data$isShotMade == TRUE, ]
@@ -207,9 +207,7 @@ player_shot_data_with_4pt <- player_shot_data
 player_shot_data_with_4pt$shot_distance <- sqrt((player_shot_data_with_4pt$locationX / 10)^2 + (player_shot_data_with_4pt$locationY / 10)^2)
 player_shot_data_with_4pt$typeShot <- ifelse(player_shot_data_with_4pt$shot_distance > line_distance, "4PT Field Goal", player_shot_data_with_4pt$typeShot)
 season_points_with_4pt <- calculate_season_points(player_shot_data_with_4pt)
-percentage_change <- ifelse(season_points_without_4pt == 0, NA, 
-                            ((season_points_with_4pt - season_points_without_4pt) / season_points_without_4pt) * 100)
-
+percentage_change <- ( ( (season_points_with_4pt - season_points_without_4pt) / season_points_without_4pt)  *100)
 
 #print outs for each outcome
 if (is.na(percentage_change)) {
@@ -224,8 +222,8 @@ if (is.na(percentage_change)) {
 
 print(outcome)
 ```
-Looking at this output from my function, I can see that a 4-point line at 30 feet we have an expected value of 1.88. This means that a player is expect to score 1.9 points per shot at this line distance. The reason this number is below 4 is because expected value takes into account the actual probability of making a shot from 30 feet.
-Using my example of Brook Lopez from the Milwaukee Bucks, we can expect that his season point total would increase by .44% with this 30 foot 4-point line. 
 
- 
+Looking at this output from my function, I can see that a 4-point line at 30 feet we have an expected value of 1.88. This means that a player is expect to score 1.9 points per shot at this line distance. The reason this number is below 4 is because expected value takes into account the actual probability of making a shot from 30 feet.
+I think having a 4-point line at 30 feet would be a fair spot because it's expected value is around 2 points per shot and that would force players to weigh the pros and cons of shooting from this 30 foot line or going in closer to the hoop and get a normal 2-points.
+Using my example of Brook Lopez from the Milwaukee Bucks, we can expect that his season point total would increase by .44% with this 30 foot 4-point line.  
 
